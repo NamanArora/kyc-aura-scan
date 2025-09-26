@@ -13,7 +13,7 @@ const Home = () => {
         <div className="text-center mb-16">
           <div className="flex justify-center items-center gap-3 mb-6">
             <Shield className="w-12 h-12 text-primary" />
-            <h1 className="text-4xl font-bold bg-gradient-primary bg-clip-text text-transparent">
+            <h1 className="text-4xl font-bold text-primary">
               SecureKYC Pro
             </h1>
           </div>

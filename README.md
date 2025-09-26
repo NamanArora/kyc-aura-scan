@@ -1,73 +1,117 @@
-# Welcome to your Lovable project
+# KYC Aura Scan
 
-## Project info
+AI-Powered Video KYC with Multi-Modal Deepfake Detection
 
-**URL**: https://lovable.dev/projects/3e80428d-2945-4024-a377-4aa265cc69d6
+## Problem Context
 
-## How can I edit this code?
+Digital identity verification is under threat from AI-generated deepfakes and replay attacks. Existing Video KYC solutions often rely on single-layer liveness checks (e.g., blink detection), which can be bypassed. Hybrid ecosystems (cloud + on-prem) require continuous identity assurance that is both secure and scalable.
 
-There are several ways of editing your application.
+## Core Innovation
 
-**Use Lovable**
+Our solution introduces a multi-modal, parallelized deepfake-resistant verification pipeline that combines:
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/3e80428d-2945-4024-a377-4aa265cc69d6) and start prompting.
+- **Behavioral cues** (prompted liveness actions, micro-dynamics)
+- **Visual forensics** (GAN artifact detection, 3D consistency checks)
+- **Temporal integrity** (loop/replay detection)
+- **Cross-modal validation** (lip–audio sync for prompted phrases)
+- **ID binding** (face-to-ID photo verification)
 
-Changes made via Lovable will be committed automatically to this repo.
+The innovation lies in running all checks independently and in parallel, then fusing results into a probability matrix that feeds a fusion engine for final decision-making.
 
-**Use your preferred IDE**
+## Key Features
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### Parallelized Multi-Check Engine
+Ensures no single-point failure; deepfakes fail across multiple dimensions.
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+### Active + Passive Defenses
+- **Active**: random prompts (blink, head turn, read digits)
+- **Passive**: forensic CNN spotting GAN fingerprints
 
-Follow these steps:
+### Cross-Modal Fusion
+Lip movements aligned with audio speech to defeat dubbed/fake audio overlays.
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+### Temporal Security Layer
+Replay detection using frame hashing and fps anomaly detection.
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+### Realtime Probability Matrix Dashboard
+Judges and auditors can see in real time how each check scores.
 
-# Step 3: Install the necessary dependencies.
-npm i
+### Signed Audit Trail
+Each session produces a JSON report with SHA256 integrity hash for compliance.
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+## Getting Started
+
+### Prerequisites
+- Node.js 18+
+- npm or yarn
+
+### Installation
+
+1. Clone the repository:
+```bash
+git clone <repository-url>
+cd kyc-aura-scan
+```
+
+2. Install dependencies:
+```bash
+npm install
+```
+
+3. Start the development server:
+```bash
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+The application will be available at `http://localhost:8080`
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+### Available Scripts
 
-**Use GitHub Codespaces**
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm run build:dev` - Build for development
+- `npm run lint` - Run ESLint
+- `npm run preview` - Preview production build
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## Technology Stack
 
-## What technologies are used for this project?
+- **Frontend**: React 18 + TypeScript + Vite
+- **UI Components**: shadcn/ui + Tailwind CSS
+- **State Management**: TanStack Query
+- **Form Handling**: React Hook Form + Zod
+- **Charts**: Recharts
+- **Icons**: Lucide React
 
-This project is built with:
+## Project Structure
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+```
+src/
+├── components/         # Reusable UI components
+│   ├── ui/            # shadcn/ui components
+│   ├── ControlPanel.tsx
+│   ├── PromptCard.tsx
+│   └── ScoreChart.tsx
+├── pages/             # Route components
+│   ├── Home.tsx       # Landing page
+│   ├── Upload.tsx     # Video upload
+│   ├── Live.tsx       # Live camera KYC
+│   └── Dashboard.tsx  # Analysis dashboard
+├── hooks/             # Custom React hooks
+├── lib/               # Utility libraries
+└── utils/             # Business logic
+    └── mockEngine.ts  # KYC simulation engine
+```
 
-## How can I deploy this project?
+## Architecture
 
-Simply open [Lovable](https://lovable.dev/projects/3e80428d-2945-4024-a377-4aa265cc69d6) and click on Share -> Publish.
+The application simulates a comprehensive Video KYC system with:
 
-## Can I connect a custom domain to my Lovable project?
+- **Multi-modal verification checks** running in parallel
+- **Real-time scoring dashboard** with live probability updates
+- **Session management** with unique IDs and audit trails
+- **Responsive design** optimized for both desktop and mobile
+- **Mock simulation engine** demonstrating production-level KYC workflows
 
-Yes, you can!
+## License
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+This project is licensed under the MIT License.
