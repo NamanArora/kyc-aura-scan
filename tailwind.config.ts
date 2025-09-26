@@ -66,13 +66,6 @@ export default {
           border: "hsl(var(--card-border))",
         },
       },
-      backgroundImage: {
-        'gradient-primary': 'var(--gradient-primary)',
-        'gradient-success': 'var(--gradient-success)',
-        'gradient-warning': 'var(--gradient-warning)',
-        'gradient-danger': 'var(--gradient-danger)',
-        'gradient-surface': 'var(--gradient-surface)',
-      },
       boxShadow: {
         'sm': 'var(--shadow-sm)',
         'DEFAULT': 'var(--shadow)',

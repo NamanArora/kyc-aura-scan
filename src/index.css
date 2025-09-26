@@ -6,68 +6,61 @@
 
 @layer base {
   :root {
-    /* Fintech Base Colors */
-    --background: 240 10% 4%;
-    --foreground: 0 0% 98%;
-    --surface: 240 6% 10%;
+    /* Yellow/White/Orange Theme - WCAG Compliant */
+    --background: 0 0% 100%;
+    --foreground: 0 0% 9%;
+    --surface: 45 100% 99%;
 
     /* Card System */
-    --card: 240 8% 8%;
-    --card-foreground: 0 0% 95%;
-    --card-border: 240 4% 16%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 9%;
+    --card-border: 45 43% 89%;
 
     /* Interactive Elements */
-    --popover: 240 8% 8%;
-    --popover-foreground: 0 0% 95%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 9%;
 
-    /* Brand Colors - Professional Blue */
-    --primary: 217 91% 60%;
+    /* Brand Colors - Orange Primary */
+    --primary: 25 95% 53%;
     --primary-foreground: 0 0% 100%;
-    --primary-hover: 217 91% 55%;
+    --primary-hover: 25 95% 48%;
 
     /* Status Colors */
-    --success: 142 76% 36%;
+    --success: 120 61% 34%;
     --success-foreground: 0 0% 100%;
-    --success-light: 142 76% 90%;
+    --success-light: 120 60% 96%;
     
-    --warning: 43 96% 56%;
-    --warning-foreground: 0 0% 0%;
-    --warning-light: 43 96% 90%;
+    --warning: 45 93% 47%;
+    --warning-foreground: 0 0% 9%;
+    --warning-light: 45 100% 96%;
     
-    --danger: 0 84% 60%;
+    --danger: 0 84% 47%;
     --danger-foreground: 0 0% 100%;
-    --danger-light: 0 84% 95%;
+    --danger-light: 0 86% 97%;
 
     /* Neutral System */
-    --secondary: 240 4% 16%;
-    --secondary-foreground: 0 0% 90%;
+    --secondary: 45 23% 93%;
+    --secondary-foreground: 0 0% 9%;
 
-    --muted: 240 5% 12%;
-    --muted-foreground: 240 5% 65%;
+    --muted: 45 25% 95%;
+    --muted-foreground: 0 0% 45%;
 
-    --accent: 240 6% 90%;
-    --accent-foreground: 240 10% 4%;
+    --accent: 54 100% 91%;
+    --accent-foreground: 0 0% 9%;
 
     /* Form Elements */
-    --destructive: 0 84% 60%;
+    --destructive: 0 84% 47%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 240 4% 16%;
-    --input: 240 4% 16%;
-    --ring: 217 91% 60%;
-
-    /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(217 91% 60%), hsl(217 91% 45%));
-    --gradient-success: linear-gradient(135deg, hsl(142 76% 36%), hsl(142 76% 28%));
-    --gradient-warning: linear-gradient(135deg, hsl(43 96% 56%), hsl(43 96% 48%));
-    --gradient-danger: linear-gradient(135deg, hsl(0 84% 60%), hsl(0 84% 52%));
-    --gradient-surface: linear-gradient(135deg, hsl(240 8% 8%), hsl(240 6% 10%));
+    --border: 45 43% 89%;
+    --input: 45 25% 95%;
+    --ring: 25 95% 53%;
 
     /* Shadows */
-    --shadow-sm: 0 1px 2px 0 hsl(240 10% 4% / 0.05);
-    --shadow: 0 4px 6px -1px hsl(240 10% 4% / 0.1);
-    --shadow-lg: 0 10px 15px -3px hsl(240 10% 4% / 0.2);
-    --shadow-glow: 0 0 20px hsl(217 91% 60% / 0.15);
+    --shadow-sm: 0 1px 2px 0 hsl(0 0% 0% / 0.05);
+    --shadow: 0 4px 6px -1px hsl(0 0% 0% / 0.1);
+    --shadow-lg: 0 10px 15px -3px hsl(0 0% 0% / 0.1);
+    --shadow-glow: 0 0 20px hsl(25 95% 53% / 0.15);
 
     /* Animations */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
