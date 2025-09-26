@@ -1,5 +1,8 @@
 # KYC Aura Scan
 
+![demo](https://github.com/user-attachments/assets/59e93509-1805-4dcc-85ed-c2cc982d288c)
+
+
 AI-Powered Video KYC with Multi-Modal Deepfake Detection
 
 ## Problem Context
