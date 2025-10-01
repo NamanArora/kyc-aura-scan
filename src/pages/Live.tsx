@@ -15,6 +15,12 @@ const Live = () => {
   const [error, setError] = useState<string>("");
 
   useEffect(() => {
+    if (stream && videoRef.current) {
+      videoRef.current.srcObject = stream;
+    }
+  }, [stream]);
+
+  useEffect(() => {
     return () => {
       if (stream) {
         stream.getTracks().forEach(track => track.stop());
@@ -31,11 +37,7 @@ const Live = () => {
         video: { width: 1280, height: 720, facingMode: 'user' },
         audio: true
       });
-      
-      if (videoRef.current) {
-        videoRef.current.srcObject = mediaStream;
-      }
-      
+
       setStream(mediaStream);
       setIsVideoOn(true);
       setIsAudioOn(true);
