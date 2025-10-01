@@ -13,6 +13,15 @@ const Live = () => {
   const [isAudioOn, setIsAudioOn] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string>("");
+  const [currentInstructionIndex, setCurrentInstructionIndex] = useState(0);
+
+  const instructions = [
+    "Blink slowly for 5 seconds",
+    "Turn your head to the left",
+    "Turn your head to the right",
+    "Look straight at the camera",
+    "Smile naturally"
+  ];
 
   useEffect(() => {
     if (stream && videoRef.current) {
@@ -27,6 +36,18 @@ const Live = () => {
       }
     };
   }, [stream]);
+
+  useEffect(() => {
+    if (!stream) return;
+
+    const interval = setInterval(() => {
+      setCurrentInstructionIndex((prevIndex) =>
+        (prevIndex + 1) % instructions.length
+      );
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [stream, instructions.length]);
 
   const startCamera = async () => {
     setIsLoading(true);
@@ -127,6 +148,13 @@ const Live = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
+              {stream && (
+                <div className="mb-4 p-4 bg-primary/10 border-2 border-primary rounded-lg text-center">
+                  <p className="text-lg font-semibold text-primary">
+                    {instructions[currentInstructionIndex]}
+                  </p>
+                </div>
+              )}
               <div className="relative aspect-video bg-muted rounded-lg overflow-hidden">
                 {stream ? (
                   <video
