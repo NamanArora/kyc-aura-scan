@@ -2,7 +2,31 @@
 
 Minimal FastAPI backend with a single endpoint.
 
-## Setup
+## Quick Start (Docker - Recommended)
+
+**Prerequisites:** Docker and Docker Compose installed
+
+1. Start the server:
+```bash
+cd backend
+docker-compose up
+```
+
+2. Server will be running at `http://localhost:8000`
+
+3. Uploaded videos are saved to `backend/public/video/` and persist on your filesystem
+
+**Benefits:**
+- No Python/pyenv installation required
+- Automatic hot-reload on code changes
+- Video uploads saved to `public/video/` sync bidirectionally with container
+- Consistent environment across all machines
+
+To stop: `docker-compose down`
+
+---
+
+## Manual Setup (Alternative)
 
 1. Create Python 3.8 virtual environment:
 ```bash
@@ -44,7 +68,7 @@ venv/bin/uvicorn main:app --reload
 
 The server will run on `http://localhost:8000`
 
-## API Endpoint
+## API Endpoints
 
 - `GET /hello` - Returns `{"message": "hello world"}`
 
@@ -52,3 +76,11 @@ Example:
 ```bash
 curl http://localhost:8000/hello
 ```
+
+## Video Storage
+
+Videos uploaded from the frontend are saved to `backend/public/video/`.
+
+**Docker:** Files saved in the container automatically appear in your local filesystem at `backend/public/video/`
+
+**Manual:** Files are saved directly to the local `backend/public/video/` folder
