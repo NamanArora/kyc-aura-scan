@@ -4,9 +4,12 @@ import { Video, VideoOff, Mic, MicOff, ArrowLeft, Camera } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { recordAndUpload } from "@/utils/videoRecorder";
+import { useToast } from "@/hooks/use-toast";
 
 const Live = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const videoRef = useRef<HTMLVideoElement>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [isVideoOn, setIsVideoOn] = useState(false);
@@ -14,6 +17,10 @@ const Live = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string>("");
   const [currentInstructionIndex, setCurrentInstructionIndex] = useState(0);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingTimeLeft, setRecordingTimeLeft] = useState(15);
+  const [sessionId, setSessionId] = useState<string>("");
+  const hasStartedRecordingRef = useRef(false);
 
   const instructions = [
     "Blink slowly for 5 seconds",
@@ -28,6 +35,14 @@ const Live = () => {
       videoRef.current.srcObject = stream;
     }
   }, [stream]);
+
+  // Auto-start recording when camera is on
+  useEffect(() => {
+    if (stream && isVideoOn && !hasStartedRecordingRef.current) {
+      hasStartedRecordingRef.current = true;
+      startRecording();
+    }
+  }, [stream, isVideoOn]);
 
   useEffect(() => {
     return () => {
@@ -99,20 +114,67 @@ const Live = () => {
     }
   };
 
-  const startAnalysis = () => {
-    if (stream) {
-      const sessionId = Date.now().toString();
-      // Store session data in localStorage for the demo
-      localStorage.setItem(`kyc-session-${sessionId}`, JSON.stringify({
-        type: 'live',
-        hasVideo: isVideoOn,
-        hasAudio: isAudioOn,
-        timestamp: new Date().toISOString()
-      }));
-      
-      // Stop camera before navigating
-      stopCamera();
-      navigate(`/dashboard/${sessionId}`);
+  const startRecording = async () => {
+    if (!stream) return;
+
+    const newSessionId = Date.now().toString();
+    setSessionId(newSessionId);
+    setIsRecording(true);
+    setRecordingTimeLeft(15);
+    setError("");
+
+    console.log('Starting video recording for session:', newSessionId);
+
+    try {
+      // Record and upload video (15 seconds)
+      const result = await recordAndUpload(
+        stream,
+        newSessionId,
+        15000,
+        (secondsLeft) => {
+          setRecordingTimeLeft(secondsLeft);
+        }
+      );
+
+      console.log('Recording completed, result:', result);
+
+      if (result.success) {
+        // Store session data in localStorage for the demo
+        localStorage.setItem(`kyc-session-${newSessionId}`, JSON.stringify({
+          type: 'live',
+          hasVideo: isVideoOn,
+          hasAudio: isAudioOn,
+          timestamp: new Date().toISOString(),
+          videoPath: result.path,
+          videoFilename: result.filename
+        }));
+
+        toast({
+          title: "Video Recorded Successfully",
+          description: `Saved as ${result.filename}`,
+        });
+
+        // Stop camera before navigating
+        stopCamera();
+        navigate(`/dashboard/${newSessionId}`);
+      } else {
+        setError(result.error || "Failed to record and upload video");
+        toast({
+          title: "Recording Failed",
+          description: result.error || "Failed to upload video",
+          variant: "destructive",
+        });
+      }
+    } catch (err) {
+      console.error('Recording error:', err);
+      setError("An error occurred during recording");
+      toast({
+        title: "Recording Error",
+        description: "An unexpected error occurred",
+        variant: "destructive",
+      });
+    } finally {
+      setIsRecording(false);
     }
   };
 
@@ -148,10 +210,23 @@ const Live = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {stream && (
+              {stream && !isRecording && (
                 <div className="mb-4 p-4 bg-primary/10 border-2 border-primary rounded-lg text-center">
                   <p className="text-lg font-semibold text-primary">
                     {instructions[currentInstructionIndex]}
+                  </p>
+                </div>
+              )}
+              {isRecording && (
+                <div className="mb-4 p-4 bg-red-500/10 border-2 border-red-500 rounded-lg text-center animate-pulse">
+                  <div className="flex items-center justify-center gap-3">
+                    <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+                    <p className="text-lg font-bold text-red-500">
+                      Recording... {recordingTimeLeft}s
+                    </p>
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    Please follow the instructions and stay in frame
                   </p>
                 </div>
               )}
@@ -274,17 +349,19 @@ const Live = () => {
             </CardContent>
           </Card>
 
-          {/* Start Analysis */}
-          <div className="flex justify-center">
-            <Button 
-              size="lg" 
-              onClick={startAnalysis}
-              disabled={!stream || !isVideoOn}
-              className="px-12 py-6 text-lg font-medium shadow-glow disabled:shadow-none"
-            >
-              Start Live KYC Analysis
-            </Button>
-          </div>
+          {/* Recording Status */}
+          {isRecording && (
+            <div className="flex justify-center">
+              <div className="px-12 py-6 text-lg font-medium bg-red-500/10 border-2 border-red-500 rounded-lg">
+                <div className="flex items-center justify-center gap-3">
+                  <div className="w-4 h-4 bg-red-500 rounded-full animate-pulse"></div>
+                  <span className="font-bold text-red-500">
+                    Recording in progress... {recordingTimeLeft}s remaining
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
