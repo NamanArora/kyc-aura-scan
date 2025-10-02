@@ -119,9 +119,27 @@ def check_active_liveness(request: CheckRequest):
 
 @app.post("/api/check/passive-forensics")
 def check_passive_forensics(request: CheckRequest):
-    """Passive Forensics: AI-powered deepfake detection"""
-    score = random.randint(0, 100)
-    return {"score": score}
+    """Passive Forensics: Deepfake detection using artifact heuristics"""
+    try:
+        from utils.passive_forensics_checker import PassiveForensicsChecker
+
+        # Extract filename and construct full path using VIDEO_DIR
+        video_filename = Path(request.videoPath).name
+        video_path = VIDEO_DIR / video_filename
+
+        if not video_path.exists():
+            print(f"Video not found: {video_path}")
+            score = random.randint(0, 100)
+            return {"score": score}
+
+        checker = PassiveForensicsChecker()
+        score = checker.check_passive_forensics(str(video_path))
+        return {"score": int(score)}
+
+    except Exception as e:
+        print(f"Error in passive forensics check: {e}")
+        score = random.randint(0, 100)
+        return {"score": score}
 
 
 @app.post("/api/check/head-pose")
