@@ -18,18 +18,17 @@ const Live = () => {
   const [error, setError] = useState<string>("");
   const [currentInstructionIndex, setCurrentInstructionIndex] = useState(0);
   const [isRecording, setIsRecording] = useState(false);
-  const [recordingTimeLeft, setRecordingTimeLeft] = useState(15);
+  const [recordingTimeLeft, setRecordingTimeLeft] = useState(20);
   const [sessionId, setSessionId] = useState<string>("");
   const [showFlash, setShowFlash] = useState(false);
   const hasStartedRecordingRef = useRef(false);
   const wakeLockRef = useRef<WakeLockSentinel | null>(null);
 
   const instructions = [
-    "Blink slowly for 5 seconds",
-    "Turn your head to the left",
+    "Blink 6 times",
     "Turn your head to the right",
-    "Look straight at the camera",
-    "Smile naturally"
+    "Turn your head to the left",
+    "Say something"
   ];
 
   useEffect(() => {
@@ -54,17 +53,21 @@ const Live = () => {
     };
   }, [stream]);
 
-  // Flash effect at 10-11 second mark (when 5-4 seconds left)
+  // Flash effect at 10-11 second mark (when 10-9 seconds left in 20 second video)
   useEffect(() => {
-    if (isRecording && recordingTimeLeft <= 5 && recordingTimeLeft >= 4) {
+    if (isRecording && recordingTimeLeft <= 10 && recordingTimeLeft >= 9) {
       setShowFlash(true);
     } else {
       setShowFlash(false);
     }
   }, [isRecording, recordingTimeLeft]);
 
+  // Cycle through instructions every 5 seconds during recording
   useEffect(() => {
-    if (!stream) return;
+    if (!isRecording) {
+      setCurrentInstructionIndex(0); // Reset to first instruction when not recording
+      return;
+    }
 
     const interval = setInterval(() => {
       setCurrentInstructionIndex((prevIndex) =>
@@ -73,7 +76,7 @@ const Live = () => {
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [stream, instructions.length]);
+  }, [isRecording, instructions.length]);
 
   const startCamera = async () => {
     setIsLoading(true);
@@ -131,7 +134,7 @@ const Live = () => {
     const newSessionId = Date.now().toString();
     setSessionId(newSessionId);
     setIsRecording(true);
-    setRecordingTimeLeft(15);
+    setRecordingTimeLeft(20);
     setError("");
 
     console.log('Starting video recording for session:', newSessionId);
@@ -147,11 +150,11 @@ const Live = () => {
     }
 
     try {
-      // Record and upload video (15 seconds)
+      // Record and upload video (20 seconds)
       const result = await recordAndUpload(
         stream,
         newSessionId,
-        15000,
+        20000,
         (secondsLeft) => {
           setRecordingTimeLeft(secondsLeft);
         }
@@ -236,23 +239,27 @@ const Live = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {stream && !isRecording && (
-                <div className="mb-4 p-4 bg-primary/10 border-2 border-primary rounded-lg text-center">
-                  <p className="text-lg font-semibold text-primary">
-                    {instructions[currentInstructionIndex]}
-                  </p>
-                </div>
-              )}
               {isRecording && (
-                <div className="mb-4 p-4 bg-red-500/10 border-2 border-red-500 rounded-lg text-center animate-pulse">
-                  <div className="flex items-center justify-center gap-3">
-                    <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
-                    <p className="text-lg font-bold text-red-500">
-                      Recording... {recordingTimeLeft}s
+                <div className="mb-4 space-y-3">
+                  <div className="p-4 bg-primary/10 border-2 border-primary rounded-lg text-center">
+                    <p className="text-2xl font-bold text-primary">
+                      {instructions[currentInstructionIndex]}
                     </p>
                   </div>
-                  <p className="text-sm text-muted-foreground mt-2">
-                    Please follow the instructions and stay in frame
+                  <div className="p-3 bg-red-500/10 border-2 border-red-500 rounded-lg text-center">
+                    <div className="flex items-center justify-center gap-3">
+                      <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+                      <p className="text-lg font-bold text-red-500">
+                        Recording... {recordingTimeLeft}s
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+              {stream && !isRecording && (
+                <div className="mb-4 p-4 bg-muted border-2 border-muted rounded-lg text-center">
+                  <p className="text-lg font-semibold text-muted-foreground">
+                    Get ready for recording...
                   </p>
                 </div>
               )}

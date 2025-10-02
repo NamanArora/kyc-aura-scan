@@ -28,8 +28,8 @@ def detect_brightness_flash(video_path: str) -> int:
     if fps == 0:
         fps = 30  # Default to 30 FPS if can't determine
 
-    # Frame ranges to analyze
-    frame_11s = int(11 * fps)  # Frame at 11 seconds
+    # Frame ranges to analyze - process up to 13 seconds to ensure we capture full flash period
+    frame_13s = int(13 * fps)  # Frame at 13 seconds (gives buffer after flash ends at 11s)
 
     # Store metrics for each frame
     frame_metrics = []
@@ -49,8 +49,8 @@ def detect_brightness_flash(video_path: str) -> int:
 
             frame_count += 1
 
-            # Only process frames we're interested in (before 9s and between 10-11s)
-            if frame_count > frame_11s:
+            # Process frames up to 13 seconds (baseline before 9s, flash at 10-11s)
+            if frame_count > frame_13s:
                 break
 
             # Convert BGR to RGB for face mesh
