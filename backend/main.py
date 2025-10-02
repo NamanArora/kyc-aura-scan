@@ -5,6 +5,8 @@ import subprocess
 import os
 import random
 from pathlib import Path
+from blink_detector import count_blinks
+from head_pose_detector import head_pose_detection
 
 app = FastAPI()
 
@@ -98,9 +100,21 @@ class CheckRequest(BaseModel):
 
 @app.post("/api/check/active-liveness")
 def check_active_liveness(request: CheckRequest):
-    """Active Liveness: Challenge-response verification"""
-    score = random.randint(0, 100)
-    return {"score": score}
+    """Active Liveness: Challenge-response verification based on blink count"""
+    try:
+        # Extract video path and construct full path
+        video_path = str(VIDEO_DIR / request.videoPath.split('/')[-1])
+
+        # Count blinks in the video
+        blink_count = count_blinks(video_path)
+
+        # Calculate score: 10 points per blink, capped at 100
+        score = min(blink_count * 10, 100)
+
+        return {"score": score, "blinks": blink_count}
+    except Exception as e:
+        # Return 0 score on error
+        return {"score": 0, "blinks": 0, "error": str(e)}
 
 
 @app.post("/api/check/passive-forensics")
@@ -112,9 +126,18 @@ def check_passive_forensics(request: CheckRequest):
 
 @app.post("/api/check/head-pose")
 def check_head_pose(request: CheckRequest):
-    """Head Pose: 3D head tracking and pose estimation"""
-    score = random.randint(0, 100)
-    return {"score": score}
+    """Head Pose: 3D head tracking and pose estimation based on left/right turns"""
+    try:
+        # Extract video path and construct full path
+        video_path = str(VIDEO_DIR / request.videoPath.split('/')[-1])
+
+        # Detect head pose and calculate score
+        score = head_pose_detection(video_path)
+
+        return {"score": score}
+    except Exception as e:
+        # Return 0 score on error
+        return {"score": 0, "error": str(e)}
 
 
 @app.post("/api/check/micro-dynamics")
