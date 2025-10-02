@@ -86,10 +86,58 @@ const Dashboard = () => {
     // Wait for all checks to complete
     await Promise.all(checkPromises);
 
-    // Mark session as completed
+    // Mark session as completed and calculate final decision
     session.status = 'completed';
+
+    // Calculate average score from all 7 security checks (each scored out of 100)
+    // Sum all scores and divide by 7
+    console.log('=== SCORE CALCULATION DEBUG ===');
+    console.log('All checks:', session.checks.map(c => ({ name: c.name, score: c.score })));
+
     const totalScore = session.checks.reduce((sum, c) => sum + c.score, 0);
-    session.finalScore = Math.round(totalScore / session.checks.length);
+    const numChecks = session.checks.length; // Should be 7 checks
+
+    console.log('Total Score:', totalScore);
+    console.log('Number of Checks:', numChecks);
+    console.log('Average (before rounding):', totalScore / numChecks);
+
+    session.finalScore = Math.round(totalScore / numChecks);
+
+    console.log('Final Score (rounded):', session.finalScore);
+    console.log('================================');
+
+    // Determine PASS/FAIL based on average score
+    session.decision = session.finalScore >= 60 ? 'PASS' : 'FAIL';
+
+    // Generate reasoning based on results
+    session.reasoning = [];
+    session.reasoning.push(`Average verification score: ${session.finalScore}/100`);
+
+    if (session.decision === 'PASS') {
+      session.reasoning.push('All security checks passed with sufficient confidence scores');
+      const excellentChecks = session.checks.filter(c => c.score >= 90);
+      if (excellentChecks.length > 0) {
+        session.reasoning.push(`Excellent scores in: ${excellentChecks.map(c => c.name).join(', ')}`);
+      }
+    } else {
+      const failedChecks = session.checks.filter(c => c.score < 60);
+      if (failedChecks.length > 0) {
+        session.reasoning.push(`Failed security checks: ${failedChecks.map(c => c.name).join(', ')}`);
+      }
+      session.reasoning.push('Average score below required threshold (60)');
+      const criticalChecks = session.checks.filter(c => c.score < 30);
+      if (criticalChecks.length > 0) {
+        session.reasoning.push(`Critical failures in: ${criticalChecks.map(c => c.name).join(', ')}`);
+      }
+    }
+
+    // Add completion event
+    session.events.push({
+      timestamp: Date.now(),
+      type: session.decision === 'PASS' ? 'success' : 'error',
+      message: `Verification completed: ${session.decision} (Average score: ${session.finalScore}/100)`
+    });
+
     setSession({ ...session });
     setIsProcessing(false);
   };
@@ -107,7 +155,7 @@ const Dashboard = () => {
       setSession({ ...session });
 
       const score = await checkFn(videoPath);
-      animateScore(check, score);
+      await animateScore(check, score);
     } catch (error) {
       console.error(`Error running check ${checkId}:`, error);
       check.status = 'failed';
@@ -115,24 +163,28 @@ const Dashboard = () => {
     }
   };
 
-  const animateScore = (check: any, targetScore: number) => {
-    const steps = 20;
-    const stepDuration = 50;
-    let currentStep = 0;
+  const animateScore = (check: any, targetScore: number): Promise<void> => {
+    return new Promise((resolve) => {
+      const steps = 20;
+      const stepDuration = 50;
+      let currentStep = 0;
 
-    const interval = setInterval(() => {
-      currentStep++;
-      const progress = currentStep / steps;
-      check.score = Math.round(progress * targetScore);
+      const interval = setInterval(() => {
+        currentStep++;
+        const progress = currentStep / steps;
+        check.score = Math.round(progress * targetScore);
 
-      if (currentStep >= steps) {
-        check.score = targetScore;
-        check.status = 'completed';
-        clearInterval(interval);
-      }
-
-      setSession({ ...session });
-    }, stepDuration);
+        if (currentStep >= steps) {
+          check.score = targetScore;
+          check.status = 'completed';
+          clearInterval(interval);
+          setSession({ ...session });
+          resolve(); // Resolve promise when animation completes
+        } else {
+          setSession({ ...session });
+        }
+      }, stepDuration);
+    });
   };
 
   const resetSession = () => {
@@ -181,7 +233,6 @@ const Dashboard = () => {
   const getStatusColor = (decision: string) => {
     switch (decision) {
       case 'PASS': return 'text-success';
-      case 'RETRY': return 'text-warning';
       case 'FAIL': return 'text-danger';
       default: return 'text-muted-foreground';
     }
@@ -190,7 +241,6 @@ const Dashboard = () => {
   const getStatusBadgeVariant = (decision: string) => {
     switch (decision) {
       case 'PASS': return 'default';
-      case 'RETRY': return 'secondary';
       case 'FAIL': return 'destructive';
       default: return 'outline';
     }
@@ -290,19 +340,25 @@ const Dashboard = () => {
             <Card className="border-card-border bg-gradient-surface">
               <CardHeader>
                 <CardTitle>Verification Status</CardTitle>
+                <CardDescription>Average of all security checks</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="text-center">
                   <div className={`text-6xl font-bold ${getStatusColor(session.decision)}`}>
-                    {session.finalScore}
+                    {session.finalScore}/100
                   </div>
-                  <p className="text-sm text-muted-foreground">Overall Score</p>
-                </div>
-                
-                <div className="text-center">
-                  <Badge variant={getStatusBadgeVariant(session.decision)} className="text-lg px-4 py-2">
+                  <p className="text-sm text-muted-foreground mt-2">Average Score</p>
+                  <Badge
+                    variant={session.decision === 'PASS' ? 'default' : 'destructive'}
+                    className="mt-3 text-base px-4 py-1"
+                  >
                     {session.decision}
                   </Badge>
+                  <p className="text-xs text-muted-foreground mt-3">
+                    {session.decision === 'PASS'
+                      ? 'Score ≥ 60 required to pass'
+                      : 'Score below 60 threshold'}
+                  </p>
                 </div>
 
                 {session.reasoning.length > 0 && (
