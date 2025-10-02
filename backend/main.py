@@ -133,9 +133,27 @@ def check_lip_audio_sync(request: CheckRequest):
 
 @app.post("/api/check/temporal-integrity")
 def check_temporal_integrity(request: CheckRequest):
-    """Temporal Integrity: Consistency across timeline"""
-    score = random.randint(0, 100)
-    return {"score": score}
+    """Temporal Integrity: Detect loops, replays, and frozen feeds using perceptual hashing"""
+    try:
+        from utils.temporal_integrity_checker import TemporalIntegrityChecker
+
+        # Extract filename and construct full path using VIDEO_DIR
+        video_filename = Path(request.videoPath).name
+        video_path = VIDEO_DIR / video_filename
+
+        if not video_path.exists():
+            print(f"Video not found: {video_path}")
+            score = random.randint(0, 100)
+            return {"score": score}
+
+        checker = TemporalIntegrityChecker()
+        score = checker.check_temporal_integrity(str(video_path))
+        return {"score": int(score)}
+
+    except Exception as e:
+        print(f"Error in temporal integrity check: {e}")
+        score = random.randint(0, 100)
+        return {"score": score}
 
 
 @app.post("/api/check/face-match")
