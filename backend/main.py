@@ -8,6 +8,7 @@ import random
 from pathlib import Path
 from blink_detector import count_blinks
 from head_pose_detector import head_pose_detection
+from brightness_detector import detect_brightness_flash
 
 app = FastAPI()
 
@@ -185,9 +186,18 @@ def check_head_pose(request: CheckRequest):
 
 @app.post("/api/check/micro-dynamics")
 def check_micro_dynamics(request: CheckRequest):
-    """Micro-Dynamics: Natural facial micro-expressions"""
-    score = random.randint(0, 100)
-    return {"score": score}
+    """Micro-Dynamics: Natural facial micro-expressions with brightness flash detection"""
+    try:
+        # Extract video path and construct full path
+        video_path = str(VIDEO_DIR / request.videoPath.split('/')[-1])
+
+        # Detect brightness flash on user's face
+        score = detect_brightness_flash(video_path)
+
+        return {"score": score}
+    except Exception as e:
+        # Return 0 score on error
+        return {"score": 0, "error": str(e)}
 
 
 @app.post("/api/check/lip-audio-sync")
