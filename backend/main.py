@@ -1,7 +1,9 @@
 from fastapi import FastAPI, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 import subprocess
 import os
+import random
 from pathlib import Path
 
 app = FastAPI()
@@ -84,3 +86,60 @@ async def upload_video(
             "success": False,
             "error": str(e)
         }
+
+
+# Request model for check endpoints
+class CheckRequest(BaseModel):
+    videoPath: str
+
+
+# Security check endpoints - return random scores for now
+# TODO: Implement actual ML/CV models for each check
+
+@app.post("/api/check/active-liveness")
+def check_active_liveness(request: CheckRequest):
+    """Active Liveness: Challenge-response verification"""
+    score = random.randint(0, 100)
+    return {"score": score}
+
+
+@app.post("/api/check/passive-forensics")
+def check_passive_forensics(request: CheckRequest):
+    """Passive Forensics: AI-powered deepfake detection"""
+    score = random.randint(0, 100)
+    return {"score": score}
+
+
+@app.post("/api/check/head-pose")
+def check_head_pose(request: CheckRequest):
+    """Head Pose: 3D head tracking and pose estimation"""
+    score = random.randint(0, 100)
+    return {"score": score}
+
+
+@app.post("/api/check/micro-dynamics")
+def check_micro_dynamics(request: CheckRequest):
+    """Micro-Dynamics: Natural facial micro-expressions"""
+    score = random.randint(0, 100)
+    return {"score": score}
+
+
+@app.post("/api/check/lip-audio-sync")
+def check_lip_audio_sync(request: CheckRequest):
+    """Lip-Audio Sync: Correlation between lip and speech"""
+    score = random.randint(0, 100)
+    return {"score": score}
+
+
+@app.post("/api/check/temporal-integrity")
+def check_temporal_integrity(request: CheckRequest):
+    """Temporal Integrity: Consistency across timeline"""
+    score = random.randint(0, 100)
+    return {"score": score}
+
+
+@app.post("/api/check/face-match")
+def check_face_match(request: CheckRequest):
+    """Face Match: Identity verification vs documents"""
+    score = random.randint(0, 100)
+    return {"score": score}

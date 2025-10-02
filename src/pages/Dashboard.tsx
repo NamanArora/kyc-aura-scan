@@ -11,6 +11,15 @@ import { mockEngine, DEMO_SCENARIOS, KYCSession, DemoScenario } from "@/utils/mo
 import { ControlPanel } from "@/components/ControlPanel";
 import { ScoreChart } from "@/components/ScoreChart";
 import { PromptCard } from "@/components/PromptCard";
+import {
+  checkActiveLiveness,
+  checkPassiveForensics,
+  checkHeadPose,
+  checkMicroDynamics,
+  checkLipAudioSync,
+  checkTemporalIntegrity,
+  checkFaceMatch
+} from "@/services/checks";
 
 const Dashboard = () => {
   const { id } = useParams<{ id: string }>();
@@ -43,16 +52,87 @@ const Dashboard = () => {
     setSession(currentSession);
   }, [id, navigate, selectedScenario]);
 
-  const startAnalysis = () => {
+  const startAnalysis = async () => {
     if (!session) return;
-    
+
     setIsProcessing(true);
-    mockEngine.startProcessing(session.id, (updatedSession) => {
-      setSession({ ...updatedSession });
-      if (updatedSession.status === 'completed') {
-        setIsProcessing(false);
+
+    // Get video path from localStorage
+    const storedSession = localStorage.getItem(`kyc-session-${session.id}`);
+    const sessionData = storedSession ? JSON.parse(storedSession) : null;
+    const videoPath = sessionData?.videoPath || sessionData?.videoFilename;
+
+    if (!videoPath) {
+      console.error('No video path found for session');
+      setIsProcessing(false);
+      return;
+    }
+
+    // Update session status
+    session.status = 'processing';
+    setSession({ ...session });
+
+    // Run all checks - comment out any check to disable it
+    const checkPromises = [
+      runCheck('active-liveness', checkActiveLiveness, videoPath),
+      runCheck('passive-forensics', checkPassiveForensics, videoPath),
+      runCheck('head-pose', checkHeadPose, videoPath),
+      runCheck('micro-dynamics', checkMicroDynamics, videoPath),
+      runCheck('lip-audio-sync', checkLipAudioSync, videoPath),
+      runCheck('temporal-integrity', checkTemporalIntegrity, videoPath),
+      runCheck('face-match', checkFaceMatch, videoPath),
+    ];
+
+    // Wait for all checks to complete
+    await Promise.all(checkPromises);
+
+    // Mark session as completed
+    session.status = 'completed';
+    const totalScore = session.checks.reduce((sum, c) => sum + c.score, 0);
+    session.finalScore = Math.round(totalScore / session.checks.length);
+    setSession({ ...session });
+    setIsProcessing(false);
+  };
+
+  const runCheck = async (
+    checkId: string,
+    checkFn: (videoPath: string) => Promise<number>,
+    videoPath: string
+  ) => {
+    const check = session?.checks.find(c => c.id === checkId);
+    if (!check) return;
+
+    try {
+      check.status = 'processing';
+      setSession({ ...session });
+
+      const score = await checkFn(videoPath);
+      animateScore(check, score);
+    } catch (error) {
+      console.error(`Error running check ${checkId}:`, error);
+      check.status = 'failed';
+      setSession({ ...session });
+    }
+  };
+
+  const animateScore = (check: any, targetScore: number) => {
+    const steps = 20;
+    const stepDuration = 50;
+    let currentStep = 0;
+
+    const interval = setInterval(() => {
+      currentStep++;
+      const progress = currentStep / steps;
+      check.score = Math.round(progress * targetScore);
+
+      if (currentStep >= steps) {
+        check.score = targetScore;
+        check.status = 'completed';
+        clearInterval(interval);
       }
-    });
+
+      setSession({ ...session });
+    }, stepDuration);
   };
 
   const resetSession = () => {
