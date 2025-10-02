@@ -4,9 +4,14 @@
  */
 
 const API_BASE = "http://localhost:8000/api/check";
+const API_ROOT = "http://localhost:8000/api";
 
 interface CheckResponse {
   score: number;
+}
+
+interface VideoListResponse {
+  videos: string[];
 }
 
 async function callCheck(checkName: string, videoPath: string): Promise<number> {
@@ -58,3 +63,19 @@ export const CHECK_FUNCTIONS: Record<string, (videoPath: string) => Promise<numb
   "temporal-integrity": checkTemporalIntegrity,
   "face-match": checkFaceMatch,
 };
+
+/**
+ * Fetch list of available videos from backend
+ * @returns Array of video filenames
+ */
+export async function fetchVideoList(): Promise<string[]> {
+  try {
+    const response = await fetch(`${API_ROOT}/list-videos`);
+    if (!response.ok) throw new Error("Failed to fetch video list");
+    const data: VideoListResponse = await response.json();
+    return data.videos;
+  } catch (error) {
+    console.error("Error fetching video list:", error);
+    return [];
+  }
+}

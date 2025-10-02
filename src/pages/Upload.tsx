@@ -1,32 +1,33 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Upload as UploadIcon, FileVideo, Image, ArrowLeft, Play } from "lucide-react";
+import { FileVideo, Image, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { fetchVideoList } from "@/services/checks";
 
 const Upload = () => {
   const navigate = useNavigate();
-  const videoInputRef = useRef<HTMLInputElement>(null);
   const idInputRef = useRef<HTMLInputElement>(null);
-  const [videoFile, setVideoFile] = useState<File | null>(null);
   const [idFile, setIdFile] = useState<File | null>(null);
-  const [dragOver, setDragOver] = useState(false);
+  const [selectedVideo, setSelectedVideo] = useState<string | null>(null);
+  const [availableVideos, setAvailableVideos] = useState<string[]>([]);
+  const [isLoadingVideos, setIsLoadingVideos] = useState(false);
 
-  const handleVideoDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setDragOver(false);
-    const files = e.dataTransfer.files;
-    if (files.length > 0 && files[0].type.startsWith('video/')) {
-      setVideoFile(files[0]);
-    }
-  };
+  // Fetch available videos on mount
+  useEffect(() => {
+    const loadVideos = async () => {
+      setIsLoadingVideos(true);
+      const videos = await fetchVideoList();
+      setAvailableVideos(videos);
+      setIsLoadingVideos(false);
+    };
+    loadVideos();
+  }, []);
 
-  const handleVideoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (files && files.length > 0) {
-      setVideoFile(files[0]);
-    }
+  const handleDropdownSelect = (videoFilename: string) => {
+    setSelectedVideo(videoFilename);
   };
 
   const handleIdSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -37,25 +38,22 @@ const Upload = () => {
   };
 
   const startAnalysis = () => {
-    if (videoFile) {
+    if (selectedVideo) {
       const sessionId = Date.now().toString();
-      // Store session data in localStorage for the demo
+
+      // Construct video path
+      const videoPath = `/public/video/${selectedVideo}`;
+
+      // Store session data in localStorage matching Live page format
       localStorage.setItem(`kyc-session-${sessionId}`, JSON.stringify({
         type: 'upload',
-        videoFile: videoFile.name,
+        videoPath: videoPath,
+        videoFilename: selectedVideo,
         idFile: idFile?.name,
         timestamp: new Date().toISOString()
       }));
       navigate(`/dashboard/${sessionId}`);
     }
-  };
-
-  const formatFileSize = (bytes: number) => {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
   return (
@@ -86,58 +84,65 @@ const Upload = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div
-                className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
-                  dragOver 
-                    ? 'border-primary bg-primary/5' 
-                    : videoFile 
-                      ? 'border-success bg-success/5' 
-                      : 'border-border hover:border-primary/50'
-                }`}
-                onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
-                onDragLeave={() => setDragOver(false)}
-                onDrop={handleVideoDrop}
-              >
-                {videoFile ? (
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-center w-16 h-16 mx-auto rounded-full bg-success/10">
-                      <Play className="w-8 h-8 text-success" />
-                    </div>
-                    <div>
-                      <h3 className="font-medium text-success">{videoFile.name}</h3>
-                      <p className="text-sm text-muted-foreground">
-                        {formatFileSize(videoFile.size)} • {videoFile.type}
-                      </p>
-                    </div>
-                    <Button variant="outline" onClick={() => videoInputRef.current?.click()}>
-                      Change File
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-center w-16 h-16 mx-auto rounded-full bg-primary/10">
-                      <UploadIcon className="w-8 h-8 text-primary" />
-                    </div>
-                    <div>
-                      <h3 className="font-medium">Drop your video here</h3>
-                      <p className="text-sm text-muted-foreground">or click to browse</p>
-                    </div>
-                    <Button onClick={() => videoInputRef.current?.click()}>
-                      Select Video File
-                    </Button>
-                  </div>
+              {/* Dropdown to select video */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium mb-2">
+                  Select a video for KYC verification
+                </label>
+                <Select
+                  value={selectedVideo || ""}
+                  onValueChange={handleDropdownSelect}
+                  disabled={isLoadingVideos}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder={isLoadingVideos ? "Loading videos..." : "Choose a video"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableVideos.map((video) => (
+                      <SelectItem key={video} value={video}>
+                        {video}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {availableVideos.length === 0 && !isLoadingVideos && (
+                  <p className="text-xs text-warning mt-2">
+                    No videos available. Please use Live KYC or record a video first.
+                  </p>
                 )}
               </div>
-              <input
-                ref={videoInputRef}
-                type="file"
-                accept="video/*"
-                onChange={handleVideoSelect}
-                className="hidden"
-              />
-              <p className="text-xs text-muted-foreground mt-4">
-                Supported formats: MP4, MOV, AVI • Max size: 100MB
-              </p>
+
+              {/* Video preview */}
+              {selectedVideo && (
+                <div className="space-y-4">
+                  <div className="relative aspect-video bg-muted rounded-lg overflow-hidden">
+                    <video
+                      controls
+                      className="w-full h-full object-contain"
+                      src={`http://localhost:8000/public/video/${selectedVideo}`}
+                    >
+                      Your browser does not support the video tag.
+                    </video>
+                  </div>
+                  <p className="text-xs text-success text-center">
+                    ✓ Selected: {selectedVideo}
+                  </p>
+                </div>
+              )}
+
+              {!selectedVideo && (
+                <div className="border-2 border-dashed rounded-lg p-8 text-center">
+                  <div className="flex items-center justify-center w-16 h-16 mx-auto rounded-full bg-primary/10">
+                    <FileVideo className="w-8 h-8 text-primary" />
+                  </div>
+                  <div className="mt-4">
+                    <h3 className="font-medium">No video selected</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Choose a video from the dropdown above
+                    </p>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -205,10 +210,10 @@ const Upload = () => {
 
         {/* Analysis Button */}
         <div className="flex justify-center mt-8">
-          <Button 
-            size="lg" 
+          <Button
+            size="lg"
             onClick={startAnalysis}
-            disabled={!videoFile}
+            disabled={!selectedVideo}
             className="px-12 py-6 text-lg font-medium shadow-glow disabled:shadow-none"
           >
             Start KYC Analysis

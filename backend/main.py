@@ -1,5 +1,6 @@
 from fastapi import FastAPI, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 import subprocess
 import os
@@ -22,6 +23,9 @@ app.add_middleware(
 # Ensure video directory exists
 VIDEO_DIR = Path("/app/public/video")
 VIDEO_DIR.mkdir(parents=True, exist_ok=True)
+
+# Mount static files to serve videos
+app.mount("/public", StaticFiles(directory="/app/public"), name="public")
 
 
 @app.get("/hello")
@@ -88,6 +92,27 @@ async def upload_video(
             "success": False,
             "error": str(e)
         }
+
+
+@app.get("/api/list-videos")
+def list_videos():
+    """
+    List all MP4 video files available in the video directory
+    """
+    try:
+        if not VIDEO_DIR.exists():
+            return {"videos": []}
+
+        # Get all .mp4 files in the video directory
+        video_files = [f.name for f in VIDEO_DIR.glob("*.mp4")]
+
+        # Sort by modification time (newest first)
+        video_files.sort(key=lambda x: (VIDEO_DIR / x).stat().st_mtime, reverse=True)
+
+        return {"videos": video_files}
+    except Exception as e:
+        print(f"Error listing videos: {e}")
+        return {"videos": []}
 
 
 # Request model for check endpoints
