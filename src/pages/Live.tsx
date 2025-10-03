@@ -18,16 +18,17 @@ const Live = () => {
   const [error, setError] = useState<string>("");
   const [currentInstructionIndex, setCurrentInstructionIndex] = useState(0);
   const [isRecording, setIsRecording] = useState(false);
-  const [recordingTimeLeft, setRecordingTimeLeft] = useState(15);
+  const [recordingTimeLeft, setRecordingTimeLeft] = useState(20);
   const [sessionId, setSessionId] = useState<string>("");
+  const [showFlash, setShowFlash] = useState(false);
   const hasStartedRecordingRef = useRef(false);
+  const wakeLockRef = useRef<WakeLockSentinel | null>(null);
 
   const instructions = [
-    "Blink slowly for 5 seconds",
-    "Turn your head to the left",
+    "Blink 6 times",
     "Turn your head to the right",
-    "Look straight at the camera",
-    "Smile naturally"
+    "Turn your head to the left",
+    "Say something"
   ];
 
   useEffect(() => {
@@ -52,8 +53,21 @@ const Live = () => {
     };
   }, [stream]);
 
+  // Flash effect at 10-11 second mark (when 10-9 seconds left in 20 second video)
   useEffect(() => {
-    if (!stream) return;
+    if (isRecording && recordingTimeLeft <= 10 && recordingTimeLeft >= 9) {
+      setShowFlash(true);
+    } else {
+      setShowFlash(false);
+    }
+  }, [isRecording, recordingTimeLeft]);
+
+  // Cycle through instructions every 5 seconds during recording
+  useEffect(() => {
+    if (!isRecording) {
+      setCurrentInstructionIndex(0); // Reset to first instruction when not recording
+      return;
+    }
 
     const interval = setInterval(() => {
       setCurrentInstructionIndex((prevIndex) =>
@@ -62,7 +76,7 @@ const Live = () => {
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [stream, instructions.length]);
+  }, [isRecording, instructions.length]);
 
   const startCamera = async () => {
     setIsLoading(true);
@@ -120,17 +134,27 @@ const Live = () => {
     const newSessionId = Date.now().toString();
     setSessionId(newSessionId);
     setIsRecording(true);
-    setRecordingTimeLeft(15);
+    setRecordingTimeLeft(20);
     setError("");
 
     console.log('Starting video recording for session:', newSessionId);
 
+    // Request wake lock to prevent screen dimming
     try {
-      // Record and upload video (15 seconds)
+      if ('wakeLock' in navigator) {
+        wakeLockRef.current = await navigator.wakeLock.request('screen');
+        console.log('Wake lock acquired - screen will stay bright');
+      }
+    } catch (err) {
+      console.warn('Wake lock failed:', err);
+    }
+
+    try {
+      // Record and upload video (20 seconds)
       const result = await recordAndUpload(
         stream,
         newSessionId,
-        15000,
+        20000,
         (secondsLeft) => {
           setRecordingTimeLeft(secondsLeft);
         }
@@ -175,6 +199,11 @@ const Live = () => {
       });
     } finally {
       setIsRecording(false);
+      // Release wake lock
+      if (wakeLockRef.current) {
+        wakeLockRef.current.release();
+        wakeLockRef.current = null;
+      }
     }
   };
 
@@ -192,7 +221,7 @@ const Live = () => {
           </div>
         </div>
 
-        <div className="max-w-4xl mx-auto space-y-8">
+        <div className="max-w-6xl mx-auto space-y-8">
           {/* Camera Preview */}
           <Card className="border-card-border bg-gradient-surface">
             <CardHeader>
@@ -210,27 +239,31 @@ const Live = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {stream && !isRecording && (
-                <div className="mb-4 p-4 bg-primary/10 border-2 border-primary rounded-lg text-center">
-                  <p className="text-lg font-semibold text-primary">
-                    {instructions[currentInstructionIndex]}
-                  </p>
-                </div>
-              )}
               {isRecording && (
-                <div className="mb-4 p-4 bg-red-500/10 border-2 border-red-500 rounded-lg text-center animate-pulse">
-                  <div className="flex items-center justify-center gap-3">
-                    <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
-                    <p className="text-lg font-bold text-red-500">
-                      Recording... {recordingTimeLeft}s
+                <div className="mb-4 space-y-3">
+                  <div className="p-4 bg-primary/10 border-2 border-primary rounded-lg text-center">
+                    <p className="text-2xl font-bold text-primary">
+                      {instructions[currentInstructionIndex]}
                     </p>
                   </div>
-                  <p className="text-sm text-muted-foreground mt-2">
-                    Please follow the instructions and stay in frame
+                  <div className="p-3 bg-red-500/10 border-2 border-red-500 rounded-lg text-center">
+                    <div className="flex items-center justify-center gap-3">
+                      <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+                      <p className="text-lg font-bold text-red-500">
+                        Recording... {recordingTimeLeft}s
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+              {stream && !isRecording && (
+                <div className="mb-4 p-4 bg-muted border-2 border-muted rounded-lg text-center">
+                  <p className="text-lg font-semibold text-muted-foreground">
+                    Get ready for recording...
                   </p>
                 </div>
               )}
-              <div className="relative aspect-video bg-muted rounded-lg overflow-hidden">
+              <div className="relative bg-muted rounded-lg overflow-hidden" style={{ height: '600px' }}>
                 {stream ? (
                   <video
                     ref={videoRef}
@@ -254,7 +287,19 @@ const Live = () => {
                     </div>
                   </div>
                 )}
-                
+
+                {/* Flash overlay for liveness detection - Red flash for eye reflection */}
+                {showFlash && (
+                  <div
+                    className="absolute inset-0 z-50"
+                    style={{
+                      backgroundColor: '#ff0000',
+                      filter: 'brightness(1.5)',
+                      opacity: 1
+                    }}
+                  />
+                )}
+
                 {/* Camera overlay guide */}
                 {stream && (
                   <div className="absolute inset-0 pointer-events-none">
@@ -343,6 +388,12 @@ const Live = () => {
                   <h3 className="font-medium text-success">✓ Audio</h3>
                   <p className="text-sm text-muted-foreground">
                     Ensure microphone is working for speech verification
+                  </p>
+                </div>
+                <div className="space-y-3">
+                  <h3 className="font-medium text-warning">⚠ Screen Brightness</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Set your device screen brightness to 100%. A red flash will appear during recording for liveness detection.
                   </p>
                 </div>
               </div>
