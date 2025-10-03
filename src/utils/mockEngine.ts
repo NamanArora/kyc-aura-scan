@@ -18,7 +18,7 @@ export interface KYCSession {
   checks: KYCCheck[];
   events: SessionEvent[];
   finalScore: number;
-  decision: 'PASS' | 'RETRY' | 'FAIL';
+  decision: 'PASS' | 'FAIL';
   reasoning: string[];
   startTime: number;
   endTime?: number;
@@ -35,7 +35,7 @@ export interface DemoScenario {
   id: string;
   name: string;
   description: string;
-  targetDecision: 'PASS' | 'RETRY' | 'FAIL';
+  targetDecision: 'PASS' | 'FAIL';
   scorePatterns: Record<string, { min: number; max: number; volatility: number }>;
   events: Omit<SessionEvent, 'timestamp'>[];
 }
@@ -108,8 +108,8 @@ export const DEMO_SCENARIOS: DemoScenario[] = [
   {
     id: 'noisy-audio',
     name: 'Noisy Environment',
-    description: 'Poor audio quality requiring retry',
-    targetDecision: 'RETRY',
+    description: 'Poor audio quality causing failure',
+    targetDecision: 'FAIL',
     scorePatterns: {
       'active-liveness': { min: 75, max: 85, volatility: 0.12 },
       'passive-forensics': { min: 80, max: 90, volatility: 0.1 },
@@ -304,55 +304,62 @@ export class MockKYCEngine {
     const session = this.sessions.get(sessionId);
     if (!session) return;
 
-    // Calculate final score and decision
+    // Calculate final score as average of all 7 checks (each scored out of 100)
+    // Sum all scores and divide by 7
     const totalScore = session.checks.reduce((sum, check) => sum + check.score, 0);
-    session.finalScore = Math.round(totalScore / session.checks.length);
-    
-    // Determine decision based on scenario
-    session.decision = session.scenario.targetDecision;
-    
+    const numChecks = session.checks.length; // 7 security checks
+    session.finalScore = Math.round(totalScore / numChecks);
+
+    // Determine decision based on average score
+    // If average >= 60: PASS, else: FAIL
+    if (session.finalScore >= 60) {
+      session.decision = 'PASS';
+    } else {
+      session.decision = 'FAIL';
+    }
+
     // Generate reasoning
     session.reasoning = this.generateReasoning(session);
-    
+
     session.status = 'completed';
     session.endTime = Date.now();
 
     session.events.push({
       timestamp: Date.now(),
-      type: session.decision === 'PASS' ? 'success' : session.decision === 'RETRY' ? 'warning' : 'error',
+      type: session.decision === 'PASS' ? 'success' : 'error',
       message: `KYC verification completed: ${session.decision}`
     });
   }
 
   private generateReasoning(session: KYCSession): string[] {
     const reasoning: string[] = [];
-    
-    switch (session.decision) {
-      case 'PASS':
-        reasoning.push('All security checks passed with high confidence scores');
-        reasoning.push('Live person detected with natural biometric patterns');
-        reasoning.push('No signs of manipulation or fraud detected');
-        break;
-        
-      case 'RETRY':
-        const lowScoreChecks = session.checks.filter(c => c.score < 60);
-        if (lowScoreChecks.length > 0) {
-          reasoning.push(`Poor quality detected in: ${lowScoreChecks.map(c => c.name).join(', ')}`);
-        }
-        reasoning.push('Please retry with better lighting and audio conditions');
-        reasoning.push('Ensure stable internet connection and clear video quality');
-        break;
-        
-      case 'FAIL':
-        const failedChecks = session.checks.filter(c => c.score < 50);
-        if (failedChecks.length > 0) {
-          reasoning.push(`Failed security checks: ${failedChecks.map(c => c.name).join(', ')}`);
-        }
-        reasoning.push('Potential fraud or manipulation detected');
-        reasoning.push('Identity verification requirements not met');
-        break;
+
+    reasoning.push(`Average verification score: ${session.finalScore}/100`);
+
+    if (session.decision === 'PASS') {
+      reasoning.push('All security checks passed with sufficient confidence scores');
+      reasoning.push('Live person detected with natural biometric patterns');
+      reasoning.push('No signs of manipulation or fraud detected');
+
+      const excellentChecks = session.checks.filter(c => c.score >= 90);
+      if (excellentChecks.length > 0) {
+        reasoning.push(`Excellent scores in: ${excellentChecks.map(c => c.name).join(', ')}`);
+      }
+    } else {
+      // FAIL case
+      const failedChecks = session.checks.filter(c => c.score < 60);
+      if (failedChecks.length > 0) {
+        reasoning.push(`Failed security checks: ${failedChecks.map(c => c.name).join(', ')}`);
+      }
+      reasoning.push('Average score below required threshold (60)');
+      reasoning.push('Identity verification requirements not met');
+
+      const criticalChecks = session.checks.filter(c => c.score < 30);
+      if (criticalChecks.length > 0) {
+        reasoning.push(`Critical failures in: ${criticalChecks.map(c => c.name).join(', ')}`);
+      }
     }
-    
+
     return reasoning;
   }
 

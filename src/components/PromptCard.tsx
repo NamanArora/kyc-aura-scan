@@ -97,17 +97,14 @@ export const PromptCard = ({ session }: PromptCardProps) => {
         </CardHeader>
         <CardContent className="text-center py-8">
           <div className={`w-20 h-20 mx-auto mb-4 rounded-full flex items-center justify-center ${
-            session.decision === 'PASS' ? 'bg-success/10' :
-            session.decision === 'RETRY' ? 'bg-warning/10' : 'bg-danger/10'
+            session.decision === 'PASS' ? 'bg-success/10' : 'bg-danger/10'
           }`}>
             <Eye className={`w-10 h-10 ${
-              session.decision === 'PASS' ? 'text-success' :
-              session.decision === 'RETRY' ? 'text-warning' : 'text-danger'
+              session.decision === 'PASS' ? 'text-success' : 'text-danger'
             }`} />
           </div>
-          <Badge 
-            variant={session.decision === 'PASS' ? 'default' : 
-                    session.decision === 'RETRY' ? 'secondary' : 'destructive'}
+          <Badge
+            variant={session.decision === 'PASS' ? 'default' : 'destructive'}
             className="text-lg px-4 py-2"
           >
             {session.decision}

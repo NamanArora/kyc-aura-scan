@@ -21,7 +21,6 @@ export const ControlPanel = ({
   const getScenarioBadgeVariant = (decision: string) => {
     switch (decision) {
       case 'PASS': return 'default';
-      case 'RETRY': return 'secondary';
       case 'FAIL': return 'destructive';
       default: return 'outline';
     }
